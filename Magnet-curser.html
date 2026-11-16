@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Fast Chain Reaction Boxes</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: #04060a;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        .instruction {
+            color: #475569;
+            text-align: center;
+            padding-top: 20px;
+            font-size: 1.2rem;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .box {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+            will-change: transform;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="instruction">Boxes par se cursor tezi se nikalo — Super Fast Blast!</div>
+
+    <!-- 15 Hyper Active Boxes -->
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+
+    <script>
+        const boxes = document.querySelectorAll('.box');
+        const boxData = [];
+        const mouse = { x: -1000, y: -1000 };
+        
+        const colors = ['#ff0055', '#00f0ff', '#7f00ff', '#00ffaa', '#ffaa00', '#ff00f0', '#ffff00'];
+        const BOX_SIZE = 40;
+        const TRIGGER_RADIUS = 60;   // Mouse kitne paas aane par blast hoga
+        const BLAST_FORCE = 8.0;     // Bullet speed push (Super Fast)
+        const FRICTION = 0.995;      // Na ke barabar brake (boxes rukenge nahi jaldi)
+        const BOUNCE = 1.05;         // 1 se zyada matlab takraane par speed aur badhegi!
+
+        // Scatter boxes on screen
+        boxes.forEach((el, index) => {
+            const data = {
+                x: Math.random() * (window.innerWidth - 100) + 50,
+                y: Math.random() * (window.innerHeight - 100) + 50,
+                vx: (Math.random() - 0.5) * 2, // Shuru se hi halki speed
+                vy: (Math.random() - 0.5) * 2,
+                element: el
+            };
+            boxData.push(data);
+            
+            el.style.backgroundColor = colors[index % colors.length];
+            el.style.boxShadow = `0 0 25px ${colors[index % colors.length]}`;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Hardcore Fast Collision Engine
+        function handleCollisions() {
+            for (let i = 0; i < boxData.length; i++) {
+                for (let j = i + 1; j < boxData.length; j++) {
+                    let b1 = boxData[i];
+                    let b2 = boxData[j];
+
+                    let dx = b2.x - b1.x;
+                    let dy = b2.y - b1.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < BOX_SIZE && dist > 0) {
+                        let overlap = BOX_SIZE - dist;
+                        let nx = dx / dist;
+                        let ny = dy / dist;
+
+                        // Unhe turant alag karo taaki fasein na
+                        b1.x -= nx * overlap * 0.5;
+                        b1.y -= ny * overlap * 0.5;
+                        b2.x += nx * overlap * 0.5;
+                        b2.y += ny * overlap * 0.5;
+
+                        // High Speed Elastic Collision
+                        let kx = b1.vx - b2.vx;
+                        let ky = b1.vy - b2.vy;
+                        let p = nx * kx + ny * ky;
+
+                        if (p > 0) {
+                            b1.vx -= p * nx * BOUNCE;
+                            b1.vy -= p * ny * BOUNCE;
+                            b2.vx += p * nx * BOUNCE;
+                            b2.vy += p * ny * BOUNCE;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fast Boundary Wall Bounce
+        function boundaries(b) {
+            const half = BOX_SIZE / 2;
+            if (b.x < half) { b.x = half; b.vx *= -1; }
+            if (b.x > window.innerWidth - half) { b.x = window.innerWidth - half; b.vx *= -1; }
+            if (b.y < half) { b.y = half; b.vy *= -1; }
+            if (b.y > window.innerHeight - half) { b.y = window.innerHeight - half; b.vy *= -1; }
+        }
+
+        // Main Fast Loop
+        function loop() {
+            boxData.forEach((b) => {
+                let mdx = b.x - mouse.x;
+                let mdy = b.y - mouse.y;
+                let mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+
+                // HOVER BLAST: Agar cursor touch kiya toh box tezi se opposite bhaagega
+                if (mDist < TRIGGER_RADIUS && mDist > 0) {
+                    let factor = (TRIGGER_RADIUS - mDist) / TRIGGER_RADIUS;
+                    b.vx += (mdx / mDist) * factor * BLAST_FORCE;
+                    b.vy += (mdy / mDist) * factor * BLAST_FORCE;
+                }
+
+                // Smooth physics updates
+                b.vx *= FRICTION;
+                b.vy *= FRICTION;
+                b.x += b.vx;
+                b.y += b.vy;
+
+                boundaries(b);
+            });
+
+            handleCollisions();
+
+            // Render GPU high speed
+            boxData.forEach((b) => {
+                b.element.style.transform = `translate3d(${b.x - BOX_SIZE/2}px, ${b.y - BOX_SIZE/2}px, 0)`;
+            });
+
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>

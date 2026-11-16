@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Trailing Boxes</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: #0f172a;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: sans-serif;
+        }
+
+        h1 {
+            color: #334155;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* Styling for the moving boxes */
+        .box {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            pointer-events: none; /* Prevents boxes from blocking mouse events */
+            transform: translate(-50%, -50%); /* Centers the box perfectly on the cursor */
+            will-change: transform;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Move your mouse around</h1>
+
+    <!-- You can add more boxes here if you want a longer tail -->
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+
+    <script>
+        // Target coordinates (where the mouse actually is)
+        const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        
+        // Grab all the box elements
+        const boxes = document.querySelectorAll('.box');
+        
+        // Array to keep track of each box's current position and color
+        const boxData = [];
+        
+        // Vibrant colors for the boxes
+        const colors = ['#ff007f', '#7f00ff', '#00f0ff', '#ff00f0', '#00ff7f'];
+
+        // Initialize positions and colors for each box
+        boxes.forEach((box, index) => {
+            boxData.push({
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2
+            });
+            box.style.backgroundColor = colors[index % colors.length];
+            // Scale down the boxes towards the end of the tail for a cooler look
+            const scale = 1 - (index * 0.12);
+            box.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            // Give later boxes a lower z-index so they layer correctly
+            box.style.zIndex = boxes.length - index;
+        });
+
+        // Update mouse position whenever it moves
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // The animation loop
+        function animate() {
+            // Box 0 follows the mouse directly with a slight delay
+            // Subsequent boxes follow the box in front of them
+            boxData.forEach((box, index) => {
+                const targetX = index === 0 ? mouse.x : boxData[index - 1].x;
+                const targetY = index === 0 ? mouse.y : boxData[index - 1].y;
+
+                // "Lerp" formula: current + (target - current) * easeRate
+                // 0.15 creates a smooth lag effect. Lower numbers = more lag.
+                box.x += (targetX - box.x) * 0.15;
+                box.y += (targetY - box.y) * 0.15;
+
+                // Maintain the scaling while updating the position
+                const scale = 1 - (index * 0.12);
+                boxes[index].style.transform = `translate3d(${box.x}px, ${box.y}px, 0) translate(-50%, -50%) scale(${scale})`;
+            });
+
+            // Keep the animation going smoothly
+            requestAnimationFrame(animate);
+        }
+
+        // Start the loop
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy & Fast Bouncing Boxes</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: #060913;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        .box {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+            will-change: transform;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 12 Boxes -->
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+     <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+    <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+
+    <script>
+        const boxes = document.querySelectorAll('.box');
+        const boxData = [];
+        const mouse = { x: -1000, y: -1000 };
+        
+        // --- SETTINGS (Yahan se speed control karein) ---
+        const BOX_SIZE = 40;
+        const TRIGGER_DIST = 100;  // Mouse kitne paas aane par jhatka lagega
+        const BLAST_FORCE = 20.0;   // Kitni tezi se bhagega (Super Fast)
+        const FRICTION = 0.99;     // Boxes ko smooth rakhne ke liye brakes
+
+        const colors = ['#ff0055', '#00f0ff', '#7f00ff', '#00ffaa', '#ffaa00', '#ff00f0'];
+
+        // 1. Shuru mein saare boxes ko screen par bikhairna
+        boxes.forEach((el, index) => {
+            boxData.push({
+                x: Math.random() * (window.innerWidth - 100) + 50,
+                y: Math.random() * (window.innerHeight - 100) + 50,
+                vx: (Math.random() - 0.5) * 2, // Default halki speed
+                vy: (Math.random() - 0.5) * 2,
+                element: el
+            });
+            el.style.backgroundColor = colors[index % colors.length];
+            el.style.boxShadow = `0 0 20px ${colors[index % colors.length]}`;
+        });
+
+        // 2. Mouse position track karna
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // 3. MAIN LOGIC: Boxes ka aapas mein takrana (Collision)
+        function checkBoxesCollision() {
+            for (let i = 0; i < boxData.length; i++) {
+                for (let j = i + 1; j < boxData.length; j++) {
+                    let b1 = boxData[i];
+                    let b2 = boxData[j];
+
+                    let dx = b2.x - b1.x;
+                    let dy = b2.y - b1.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Agar dono boxes takra gaye
+                    if (dist < BOX_SIZE && dist > 0) {
+                        let overlap = BOX_SIZE - dist;
+                        let nx = dx / dist;
+                        let ny = dy / dist;
+
+                        // Dono ko alag karo taaki chipke na
+                        b1.x -= nx * overlap * 0.5;
+                        b1.y -= ny * overlap * 0.5;
+                        b2.x += nx * overlap * 0.5;
+                        b2.y += ny * overlap * 0.5;
+
+                        // Speed badalna (Elastic Bounce)
+                        let kx = b1.vx - b2.vx;
+                        let ky = b1.vy - b2.vy;
+                        let p = nx * kx + ny * ky;
+
+                        if (p > 0) {
+                            b1.vx -= p * nx;
+                            b1.vy -= p * ny;
+                            b2.vx += p * nx;
+                            b2.vy += p * ny;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Diwar se takra kar bounce hona
+        function checkWallCollision(b) {
+            const half = BOX_SIZE / 2;
+            if (b.x < half) { b.x = half; b.vx *= -1; }
+            if (b.x > window.innerWidth - half) { b.x = window.innerWidth - half; b.vx *= -1; }
+            if (b.y < half) { b.y = half; b.vy *= -1; }
+            if (b.y > window.innerHeight - half) { b.y = window.innerHeight - half; b.vy *= -1; }
+        }
+
+        // 5. Poore animation ko chalane wala Loop
+        function animationLoop() {
+            boxData.forEach((b) => {
+                // Mouse se distance nikalna
+                let mdx = b.x - mouse.x;
+                let mdy = b.y - mouse.y;
+                let mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+
+                // HOVER BLAST: Agar mouse paas aaya toh tezi se push karo
+                if (mDist < TRIGGER_DIST && mDist > 0) {
+                    let pct = (TRIGGER_DIST - mDist) / TRIGGER_DIST;
+                    b.vx += (mdx / mDist) * pct * BLAST_FORCE;
+                    b.vy += (mdy / mDist) * pct * BLAST_FORCE;
+                }
+
+                // Speed calculation
+                b.vx *= FRICTION;
+                b.vy *= FRICTION;
+                b.x += b.vx;
+                b.y += b.vy;
+
+                checkWallCollision(b);
+            });
+
+            checkBoxesCollision();
+
+            // Screen par boxes ki position update karna
+            boxData.forEach((b) => {
+                b.element.style.transform = `translate3d(${b.x - BOX_SIZE/2}px, ${b.y - BOX_SIZE/2}px, 0)`;
+            });
+
+            requestAnimationFrame(animationLoop);
+        }
+
+        // Game/Animation Shuru karein
+        animationLoop();
+    </script>
+</body>
+</html>
